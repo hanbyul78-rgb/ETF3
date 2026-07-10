@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>라오어 무한매수법 통합 계산기 (V2.2 · V3.0)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#2a3140;
+    --txt:#e6edf3; --muted:#8b949e;
+    --v22:#3b82f6; --v30:#8b5cf6; --sell:#f97316; --green:#22c55e; --red:#ef4444; --gold:#eab308;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;
+    line-height:1.55; -webkit-text-size-adjust:100%;}
+  .wrap{max-width:780px; margin:0 auto; padding:16px 14px 60px}
+  header{text-align:center; margin:6px 0 16px}
+  header h1{font-size:20px; margin:0 0 3px}
+  header p{margin:0; color:var(--muted); font-size:12.5px}
+
+  /* tabs */
+  .tabs{position:sticky; top:0; z-index:10; display:grid; grid-template-columns:repeat(4,1fr);
+    gap:6px; background:var(--bg); padding:8px 0 10px}
+  .tabs button{padding:10px 4px; border:1px solid var(--line); border-radius:10px; background:var(--panel);
+    color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; transition:.15s}
+  .tabs button.active{color:#fff; border-color:transparent}
+  .tabs button[data-tab="v22"].active{background:var(--v22)}
+  .tabs button[data-tab="v30"].active{background:var(--v30)}
+  .tabs button[data-tab="diff"].active{background:#0ea5a4}
+  .tabs button[data-tab="guide"].active{background:#d97706}
+  .tab{display:none} .tab.active{display:block}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px}
+  .card h2{font-size:15px; margin:0 0 14px; letter-spacing:.3px}
+  .card h3{font-size:14px; margin:16px 0 8px; color:#cbd5e1}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px}
+  .field input{width:100%; padding:10px 12px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:9px; color:var(--txt); font-size:15px; outline:none;}
+  .field input:focus{border-color:#60a5fa}
+  .field .unit{font-size:11px; color:var(--muted)}
+  .btn{width:100%; padding:13px; margin-top:6px; border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:600; cursor:pointer;}
+  .btn.v22{background:var(--v22)} .btn.v30{background:var(--v30)}
+  .btn:active{opacity:.85}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--muted); margin-top:8px}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .stat{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px 10px; text-align:center}
+  .stat .k{font-size:11px; color:var(--muted)}
+  .stat .v{font-size:19px; font-weight:700; margin-top:3px}
+  .bar{height:9px; background:var(--panel2); border-radius:6px; overflow:hidden; margin-top:12px; border:1px solid var(--line)}
+  .bar > i{display:block; height:100%}
+  .bar.v22 > i{background:linear-gradient(90deg,#3b82f6,#38bdf8)}
+  .bar.v30 > i{background:linear-gradient(90deg,#8b5cf6,#ec4899)}
+  .phase{display:inline-block; font-size:12px; padding:3px 10px; border-radius:20px; margin-top:10px; font-weight:600; background:var(--panel2); color:#cbd5e1}
+  .phase.q{background:rgba(234,179,8,.18); color:#fde047}
+
+  .order{border:1px solid var(--line); border-radius:11px; overflow:hidden; margin-bottom:12px}
+  .order .top{display:flex; justify-content:space-between; align-items:center; padding:11px 14px; font-weight:600; font-size:14px}
+  .order.buy .top{background:rgba(59,130,246,.13); color:#93c5fd}
+  .order.buyv30 .top{background:rgba(139,92,246,.14); color:#c4b5fd}
+  .order.sell .top{background:rgba(249,115,22,.13); color:#fdba74}
+  .order .row{display:flex; justify-content:space-between; padding:9px 14px; border-top:1px solid var(--line); font-size:14px}
+  .order .row span:first-child{color:var(--muted)}
+  .order .row b{font-size:15px; font-variant-numeric:tabular-nums}
+  .tag{font-size:11px; font-weight:600; padding:2px 8px; border-radius:6px; background:var(--panel2); color:var(--muted)}
+  .signal{border-radius:11px; padding:14px; text-align:center; font-weight:600; font-size:15px}
+  .signal.hit{background:rgba(34,197,94,.14); color:#4ade80; border:1px solid rgba(34,197,94,.35)}
+  .signal.hold{background:var(--panel2); color:var(--muted); border:1px solid var(--line)}
+  .signal small{display:block; font-weight:400; font-size:12px; margin-top:4px; color:var(--muted)}
+  .note{font-size:12px; color:var(--muted); margin-top:10px}
+  .warn{background:rgba(234,179,8,.1); border:1px solid rgba(234,179,8,.35); color:#fde047; border-radius:11px; padding:13px; font-size:13px; margin-top:12px}
+  .danger{background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.4); color:#fca5a5}
+  .res{display:none}
+
+  /* diff & guide */
+  .cmp{display:grid; grid-template-columns:110px 1fr 1fr; gap:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:13px}
+  .cmp > div{padding:11px 12px; border-bottom:1px solid var(--line)}
+  .cmp .h{font-weight:700; background:var(--panel2)}
+  .cmp .h.c22{color:#93c5fd} .cmp .h.c30{color:#c4b5fd}
+  .cmp .lbl{color:var(--muted); background:rgba(255,255,255,.02); font-weight:600}
+  .cmp > div:nth-last-child(-n+3){border-bottom:none}
+  .prose{font-size:13.5px; color:#cbd5e1; line-height:1.75}
+  .prose b{color:#e6edf3}
+  .hrs{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0}
+  .hbox{background:var(--panel2); border:1px solid var(--line); border-radius:11px; padding:13px}
+  .hbox .t{font-size:12px; color:var(--muted)}
+  .hbox .m{font-size:16px; font-weight:700; margin-top:4px}
+  .hbox .s{font-size:11px; color:var(--muted); margin-top:3px}
+  .step{display:flex; gap:11px; margin-bottom:11px}
+  .step .n{flex:0 0 26px; height:26px; border-radius:50%; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#93c5fd}
+  .step .tx{font-size:13px; color:#cbd5e1; line-height:1.6}
+  .kv{display:flex; gap:8px; font-size:13px; padding:7px 0; border-bottom:1px solid var(--line)}
+  .kv:last-child{border:none}
+  .kv .k{flex:0 0 96px; color:var(--muted)}
+  .pill{display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px; background:var(--panel2); color:#cbd5e1; margin:2px 3px 2px 0}
+  .disc{font-size:11px; color:#5b6572; text-align:center; margin-top:18px; line-height:1.6}
+  @media(max-width:480px){ .grid{grid-template-columns:1fr} .stat .v{font-size:17px} .hrs{grid-template-columns:1fr} .cmp{grid-template-columns:92px 1fr 1fr; font-size:12px} .tabs button{font-size:12px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔁 무한매수법 통합 계산기</h1>
+    <p>예측하지 않는다. 시스템으로 대응한다.</p>
+  </header>
+
+  <div class="tabs">
+    <button data-tab="v22" class="active" onclick="showTab('v22')">V2.2 계산기</button>
+    <button data-tab="v30" onclick="showTab('v30')">V3.0 계산기</button>
+    <button data-tab="diff" onclick="showTab('diff')">버전 차이</button>
+    <button data-tab="guide" onclick="showTab('guide')">기본 가이드</button>
+  </div>
+
+  <!-- ============ V2.2 ============ -->
+  <section id="tab-v22" class="tab active">
+    <div class="card">
+      <h2 style="color:#93c5fd">🟦 V2.2 — 안정형 (40분할)</h2>
+      <div class="grid">
+        <div class="field"><label>종목 (티커)</label><input id="a_ticker" type="text" value="TQQQ" autocomplete="off"></div>
+        <div class="field"><label>원금 (시드) <span class="unit">$</span></label><input id="a_seed" type="number" inputmode="decimal" placeholder="예: 4000"></div>
+        <div class="field"><label>평균단가 <span class="unit">$</span></label><input id="a_avg" type="number" inputmode="decimal" placeholder="예: 50.00"></div>
+        <div class="field"><label>보유 수량 <span class="unit">주</span></label><input id="a_qty" type="number" inputmode="decimal" placeholder="예: 40"></div>
+        <div class="field"><label>현재가 (선택) <span class="unit">$</span></label><input id="a_cur" type="number" inputmode="decimal" placeholder="예: 55.00"></div>
+        <div class="field"><label>분할 수 (기본 40)</label><input id="a_div" type="number" inputmode="decimal" value="40"></div>
+      </div>
+      <button class="btn v22" onclick="calcV22()">오늘의 주문 계산</button>
+      <button class="btn ghost" onclick="resetV('a',40)">입력 초기화</button>
+      <p class="note">처음 시작(0주)이면 평단은 비워두세요. 익절 기준은 평단 +10% 고정입니다.</p>
+    </div>
+    <div id="a_res" class="res">
+      <div class="card"><h2>📊 진행 현황</h2>
+        <div class="stats">
+          <div class="stat"><div class="k">회차 (T)</div><div class="v" id="a_t">–</div></div>
+          <div class="stat"><div class="k">진행률</div><div class="v" id="a_prog">–</div></div>
+          <div class="stat"><div class="k">1회 매수액</div><div class="v" id="a_one">–</div></div>
+        </div>
+        <div class="bar v22"><i id="a_bar" style="width:0%"></i></div>
+        <div><span class="phase" id="a_phase">–</span></div>
+      </div>
+      <div class="card"><h2>🟦 매수 주문</h2><div id="a_buy"></div><p class="note" id="a_buyNote"></p></div>
+      <div class="card"><h2>🟧 매도 주문</h2><div id="a_sell"></div><p class="note">1/4은 (10−T/2)% LOC 매도(쿼터매도), 3/4은 평단 +10% 지정가. 매도는 전·후반 구분 없이 매일.</p></div>
+      <div class="card"><h2>🎯 익절 신호</h2><div id="a_signal"></div></div>
+      <div id="a_alert"></div>
+    </div>
+  </section>
+
+  <!-- ============ V3.0 ============ -->
+  <section id="tab-v30" class="tab">
+    <div class="card">
+      <h2 style="color:#c4b5fd">🟪 V3.0 — 공격형 (20분할·복리)</h2>
+      <div class="grid">
+        <div class="field"><label>종목 (티커)</label><input id="b_ticker" type="text" value="TQQQ" autocomplete="off"></div>
+        <div class="field"><label>원금 (시드) <span class="unit">$</span></label><input id="b_seed" type="number" inputmode="decimal" placeholder="예: 20000"></div>
+        <div class="field"><label>평균단가 <span class="unit">$</span></label><input id="b_avg" type="number" inputmode="decimal" placeholder="예: 50.00"></div>
+        <div class="field"><label>보유 수량 <span class="unit">주</span></label><input id="b_qty" type="number" inputmode="decimal" placeholder="예: 20"></div>
+        <div class="field"><label>현재가 (선택) <span class="unit">$</span></label><input id="b_cur" type="number" inputmode="decimal" placeholder="예: 57.00"></div>
+        <div class="field"><label>분할 수 (기본 20)</label><input id="b_div" type="number" inputmode="decimal" value="20"></div>
+        <div class="field"><label>익절 목표 % <span class="unit">TQQQ15·SOXL20</span></label><input id="b_tp" type="number" inputmode="decimal" value="15"></div>
+        <div class="field"><label>1회 매수금 직접입력 <span class="unit">복리·선택 $</span></label><input id="b_one" type="number" inputmode="decimal" placeholder="비우면 원금÷분할"></div>
+      </div>
+      <button class="btn v30" onclick="calcV30()">오늘의 주문 계산</button>
+      <button class="btn ghost" onclick="resetV('b',20)">입력 초기화</button>
+      <p class="note">V3.0은 복리 버전 — 수익 발생 시 수익금÷40을 다음 1회 매수금에 더해 '직접입력'란에 반영(손실 시 유지).</p>
+    </div>
+    <div id="b_res" class="res">
+      <div class="card"><h2>📊 진행 현황</h2>
+        <div class="stats">
+          <div class="stat"><div class="k">회차 (T)</div><div class="v" id="b_t">–</div></div>
+          <div class="stat"><div class="k">진행률</div><div class="v" id="b_prog">–</div></div>
+          <div class="stat"><div class="k">1회 매수액</div><div class="v" id="b_one_o">–</div></div>
+        </div>
+        <div class="bar v30"><i id="b_bar" style="width:0%"></i></div>
+        <div><span class="phase" id="b_phase">–</span></div>
+      </div>
+      <div class="card"><h2>🟪 매수 주문</h2><div id="b_buy"></div><p class="note" id="b_buyNote"></p></div>
+      <div class="card"><h2>🟧 매도 주문</h2><div id="b_sell"></div><p class="note" id="b_sellNote"></p></div>
+      <div class="card"><h2>🎯 익절 신호</h2><div id="b_signal"></div></div>
+      <div id="b_alert"></div>
+    </div>
+  </section>
+
+  <!-- ============ 버전 차이 ============ -->
+  <section id="tab-diff" class="tab">
+    <div class="card">
+      <h2 style="color:#5eead4">⚖️ V2.2 vs V3.0 한눈에</h2>
+      <div class="cmp">
+        <div class="h lbl"></div><div class="h c22">V2.2 (안정형)</div><div class="h c30">V3.0 (공격형)</div>
+        <div class="lbl">분할 수</div><div>40분할</div><div>20분할 (소진 빠름)</div>
+        <div class="lbl">전·후반 기준</div><div>T = 20</div><div>T = 10</div>
+        <div class="lbl">매수 공식</div><div>평단 +(10−T/2)%</div><div>평단 +(15−1.5T)%</div>
+        <div class="lbl">익절 목표</div><div>평단 +10%</div><div>TQQQ +15% / SOXL +20%</div>
+        <div class="lbl">복리</div><div>단리 (수익 미반영)</div><div>복리 (수익금 즉시 반영)</div>
+        <div class="lbl">쿼터 구간</div><div>매일 1/4 LOC 매도</div><div>19&lt;T&lt;20 쿼터모드(MOC)</div>
+        <div class="lbl">원금 소진 시</div><div>1회 매수액 유지</div><div>1회 매수액 유지</div>
+        <div class="lbl">성격</div><div>생존·숙면 우선</div><div>강세장 수익 극대화</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🧬 버전의 진화</h2>
+      <p class="prose">
+        <b>V1 (원조)</b> — 가장 단순. 종가 수익률이 +면 0.5회차, −면 1회차 매수, 매도는 평단 +10% 지정가 하나. 명쾌하지만 하락장에서 40회차를 빨리 소진하고 물량이 묶이는 약점.<br><br>
+        <b>V2 / V2.1</b> — 그 약점 보완. 전·후반 개념, 분할매도, 그리고 원금 소진 시 일부만 손절하고 이어가는 <b>쿼터손절(쿼터매도)</b> 도입. V1보다 보수적이고 생존력 강화.<br><br>
+        <b>V2.2</b> — V2 로직을 회차(T) 공식으로 표준화한 완성형 안정판. 매수 (10−T/2)%, 매도 1/4 LOC + 3/4 평단 +10% 지정가. "안정적 생존"에 최적화.<br><br>
+        <b>V3.0 (2024)</b> — 방향을 정반대로 튼 공격형. 40→20분할, 단리→복리, 익절 +10%→+15%(TQQQ). 강세장 수익 극대화가 목표지만 회차 소진이 빠르고 하락장 리스크가 큼.
+      </p>
+      <div class="warn" style="margin-top:14px">숙면·안정이 목적이면 <b>V2.2</b>, 강세장 극대화가 목적이면 <b>V3.0</b>. 어느 쪽이든 정해진 1회 매수액만 기계적으로 집행하는 원칙은 동일합니다.</div>
+    </div>
+  </section>
+
+  <!-- ============ 기본 가이드 ============ -->
+  <section id="tab-guide" class="tab">
+    <div class="card">
+      <h2 style="color:#fbbf24">📘 무한매수법이 뭔가요?</h2>
+      <p class="prose">
+        미국의 <b>3배 레버리지 ETF</b>(TQQQ·SOXL 등)를 매일 정해진 금액만큼 조금씩 나눠 사서 평단가를 낮추고, 목표 수익률(+10~15%)에 닿으면 전량 익절해 사이클을 끝내고 다시 1회차부터 반복하는 <b>기계적 분할매수</b> 전략입니다. 차트를 예측하지 않고, 정해진 수식대로만 매일 주문을 겁니다.
+      </p>
+      <div style="margin-top:10px">
+        <span class="pill">대상: TQQQ</span><span class="pill">SOXL</span><span class="pill">BULZ / LABU 등 3배 ETF</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🕙 미국 장은 언제 열리나요? (방콕 시간)</h2>
+      <div class="hrs">
+        <div class="hbox">
+          <div class="t">☀️ 서머타임 (3월 둘째주~11월 첫주)</div>
+          <div class="m">저녁 8:30 ~ 새벽 03:00</div>
+          <div class="s">현재 이 기간입니다</div>
+        </div>
+        <div class="hbox">
+          <div class="t">❄️ 겨울 표준시 (11월~3월)</div>
+          <div class="m">밤 9:30 ~ 새벽 04:00</div>
+          <div class="s">서머타임 해제 후</div>
+        </div>
+      </div>
+      <p class="note">방콕 시간(ICT, UTC+7) 기준입니다. 미국 정규장은 현지 09:30~16:00. 주말·미국 공휴일에는 열리지 않습니다. 한 주의 마지막 장은 금요일 저녁~토요일 새벽입니다.</p>
+    </div>
+
+    <div class="card">
+      <h2>🛒 몇 시에 사고 몇 시에 파나요?</h2>
+      <p class="prose">
+        핵심은 <b>"화면을 지켜볼 필요가 없다"</b>는 점입니다. 무한매수법의 매수·매도는 대부분 <b>LOC 주문(종가 체결)</b>이라, 특정 시각에 클릭하는 게 아니라 <b>미리 예약해두면 그날 종가에 자동으로 체결</b>됩니다.
+      </p>
+      <h3>LOC 주문이란?</h3>
+      <div class="prose">
+        <div class="kv"><div class="k">LOC 매수</div><div>내가 정한 가격보다 <b>종가가 같거나 낮으면</b> 그 종가에 매수 체결</div></div>
+        <div class="kv"><div class="k">LOC 매도</div><div>내가 정한 가격보다 <b>종가가 같거나 높으면</b> 그 종가에 매도 체결</div></div>
+        <div class="kv"><div class="k">지정가 매도</div><div>+10~15% 익절 주문. <b>장중에 그 가격에 닿으면</b> 즉시 체결 (LOC 아님)</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔁 하루 루틴 (이렇게 반복)</h2>
+      <div class="step"><div class="n">1</div><div class="tx"><b>장 열리기 전(방콕 저녁) 또는 자기 전</b>에, 이 계산기에 평단·수량·시드를 넣어 오늘의 주문을 뽑습니다.</div></div>
+      <div class="step"><div class="n">2</div><div class="tx">증권사 앱에서 <b>매수 LOC + 매도 LOC/지정가</b>를 예약주문으로 걸어둡니다. 여유 있게 장 초반에 걸어두세요(증권사별 LOC 접수 마감 시간이 다릅니다).</div></div>
+      <div class="step"><div class="n">3</div><div class="tx">잠자는 사이 <b>종가에 자동 체결</b>됩니다. 미국 장 마감은 방콕 새벽입니다.</div></div>
+      <div class="step"><div class="n">4</div><div class="tx">다음 날 아침, <b>체결 결과(새 평단·수량)</b>를 확인해 다시 계산기에 입력 → 오늘 주문 산출. 이 과정을 매 거래일 반복합니다.</div></div>
+      <p class="note">※ 매수/매도를 언제 "지켜보며" 눌러야 하는 게 아니라, 하루 한 번 예약해두고 종가 결과만 확인하면 됩니다. 미국 주식이라 달러 환전이 필요합니다.</p>
+    </div>
+
+    <div class="card">
+      <h2>✅ 시작 전 체크리스트</h2>
+      <div class="prose">
+        <div class="kv"><div class="k">종목</div><div>거래량 풍부한 3배 ETF (TQQQ 등)</div></div>
+        <div class="kv"><div class="k">원금 분할</div><div>V2.2는 40분할 · V3.0은 20분할</div></div>
+        <div class="kv"><div class="k">1회 매수액</div><div>원금 ÷ 분할 수 (매일 이 금액만)</div></div>
+        <div class="kv"><div class="k">익절</div><div>V2.2 +10% · V3.0 +15%(TQQQ) 도달 시 전량</div></div>
+        <div class="kv"><div class="k">금지</div><div>임의 몰빵·물타기 (원칙 위반)</div></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="disc">
+    본 계산기는 라오어 무한매수법(V2.2·V3.0) 방법론을 참고용으로 구현한 도구입니다.<br>
+    장 시간·주문 접수 마감은 증권사별로 다를 수 있으니 반드시 본인 증권사 규정을 확인하세요.<br>
+    3배 레버리지 ETF는 고위험 상품이며, 모든 투자의 최종 책임은 본인에게 있습니다.
+  </p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const money = n => '$' + n.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+const px = n => '$' + n.toFixed(2);
+const calcT = (inv,one)=> one<=0?0:Math.ceil((inv/one)*10)/10;
+function orderHTML(kind,title,tag,rows){
+  let h=`<div class="order ${kind}"><div class="top"><span>${title}</span><span class="tag">${tag}</span></div>`;
+  rows.forEach(r=>h+=`<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`);
+  return h+'</div>';
+}
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  $('tab-'+t).classList.add('active');
+  document.querySelector(`.tabs button[data-tab="${t}"]`).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  try{localStorage.setItem('imae_tab',t);}catch(e){}
+}
+
+// ---- 저장/복원 ----
+const A=['a_ticker','a_seed','a_avg','a_qty','a_cur','a_div'];
+const B=['b_ticker','b_seed','b_avg','b_qty','b_cur','b_div','b_tp','b_one'];
+function save(){try{const o={};[...A,...B].forEach(f=>o[f]=$(f).value);localStorage.setItem('imae_all',JSON.stringify(o));}catch(e){}}
+function load(){try{const o=JSON.parse(localStorage.getItem('imae_all')||'{}');[...A,...B].forEach(f=>{if(o[f]!=null)$(f).value=o[f];});const t=localStorage.getItem('imae_tab');if(t)showTab(t);}catch(e){}}
+function resetV(p,dv){
+  const keys = p==='a'?A:B;
+  keys.forEach(f=>{ if(f.endsWith('_div')) $(f).value=dv; else if(f.endsWith('_tp')) $(f).value=15; else if(f.endsWith('_ticker')) $(f).value='TQQQ'; else $(f).value=''; });
+  $(p+'_res').style.display='none'; save();
+}
+
+// ================= V2.2 =================
+function calcV22(){
+  const t=($('a_ticker').value||'종목').toUpperCase().trim();
+  const seed=parseFloat($('a_seed').value)||0, avg=parseFloat($('a_avg').value)||0,
+        qty=parseFloat($('a_qty').value)||0, cur=parseFloat($('a_cur').value)||0,
+        divN=parseFloat($('a_div').value)||40;
+  if(seed<=0){alert('원금(시드)을 입력하세요.');return;}
+  const one=seed/divN, inv=avg*qty, T=calcT(inv,one), prog=Math.min(inv/seed*100,100);
+  const pct=10-T/2, first=T<20, sign=pct>=0?'+':'';
+  save(); $('a_res').style.display='block';
+  $('a_t').textContent='T '+T.toFixed(1); $('a_prog').textContent=prog.toFixed(1)+'%';
+  $('a_one').textContent=money(one); $('a_bar').style.width=prog+'%';
+  const ph=$('a_phase'); ph.className='phase';
+  ph.textContent = qty<=0?'시작 전 · 1회차 진입' : first?'전반전 (T<20) · 공격적 매수':'후반전 (T≥20) · 보수적 매수';
+
+  const buy=$('a_buy'), bn=$('a_buyNote');
+  if(qty<=0){
+    if(cur>0){const s=Math.max(1,Math.round(one/cur));
+      buy.innerHTML=orderHTML('buy','1회차 진입 매수','시장가/LOC',[['종목',t],['금액',money(one)],['기준가',px(cur)],['예상 수량',s+'주']]);}
+    else buy.innerHTML=orderHTML('buy','1회차 진입 매수','시장가/LOC',[['종목',t],['금액',money(one)],['수량','현재가 입력 시 계산']]);
+    bn.textContent='첫 진입은 1회 매수액만큼 현재가 근처에서 매수 후, 내일부터 평단 기준 공식 적용.';
+  } else if(first){
+    const half=one/2, pa=avg, pb=avg*(1+pct/100);
+    buy.innerHTML=orderHTML('buy','① 평단가 LOC 매수','LOC',[['주문가',px(pa)+'  (평단가)'],['금액',money(half)],['수량',Math.max(1,Math.round(half/pa))+'주']])
+      +orderHTML('buy','② 큰수 LOC 매수','LOC',[['주문가',px(pb)+`  (평단 ${sign}${pct.toFixed(1)}%)`],['금액',money(half)],['수량',Math.max(1,Math.round(half/pb))+'주']]);
+    bn.textContent='전반전: 1회 매수액을 반으로 나눠 두 주문. LOC라 실제 체결가는 종가로 동일.';
+  } else {
+    const pb=avg*(1+pct/100);
+    buy.innerHTML=orderHTML('buy','평단 대비 LOC 매수 (단일)','LOC',[['주문가',px(pb)+`  (평단 ${sign}${pct.toFixed(1)}%)`],['금액',money(one)],['수량',Math.max(1,Math.round(one/pb))+'주']]);
+    bn.textContent='후반전: 매수 주문 하나만. T가 커질수록 주문가가 평단 아래로.';
+  }
+
+  const sell=$('a_sell');
+  if(qty<=0){ sell.innerHTML='<div class="signal hold">보유 수량이 없어 매도 주문이 없습니다.</div>'; }
+  else{
+    const q4=Math.round(qty/4), q34=qty-q4, lp=avg*(1+pct/100), tp=avg*1.10;
+    sell.innerHTML=orderHTML('sell','① 쿼터 LOC 매도 (1/4)','LOC',[['주문가',px(lp)+`  (평단 ${sign}${pct.toFixed(1)}%)`],['수량',q4+'주']])
+      +orderHTML('sell','② 지정가 매도 (3/4)','지정가',[['주문가',px(tp)+'  (평단 +10%)'],['수량',q34+'주']]);
+  }
+
+  const sig=$('a_signal');
+  if(qty<=0) sig.innerHTML='<div class="signal hold">보유 전 · 익절 판단 대상 아님</div>';
+  else{ const tp=avg*1.10, r=cur>0?(cur/avg-1)*100:null;
+    if(cur>0&&cur>=tp) sig.innerHTML=`<div class="signal hit">✅ 익절 기준 도달 — 사이클 종료 권장<br><small>현재가 ${px(cur)} ≥ ${px(tp)} (수익률 +${r.toFixed(2)}%) · 익절 후 1회차 재시작</small></div>`;
+    else if(cur>0){const g=(tp-cur)/cur*100; sig.innerHTML=`<div class="signal hold">⏳ 익절 대기<br><small>현재 ${r>=0?'+':''}${r.toFixed(2)}% · 목표 ${px(tp)}까지 ${g.toFixed(2)}% · 원칙대로 매수 지속</small></div>`;}
+    else sig.innerHTML=`<div class="signal hold">현재가 입력 시 익절 판단<br><small>익절 목표가 ${px(tp)} (평단 +10%)</small></div>`;
+  }
+
+  let a='';
+  if(T>=39.1) a=`<div class="warn danger"><b>⚠️ 원금 소진 (T ${T.toFixed(1)})</b><br>40회차 도달. 여기서부터는 <b>영혼법</b> — 신규 원금 투입 없이 보유 물량 매도만 유지하며, 반등해 매도가 체결되면 회차가 낮아집니다. 임의 몰빵은 원칙 위반.</div>`;
+  else if(T>=30) a=`<div class="warn"><b>주의 — 후반 회차 (T ${T.toFixed(1)})</b><br>원금의 ${prog.toFixed(0)}% 투입. 공포에 흔들리지 말고 1회 매수액만 집행하세요.</div>`;
+  $('a_alert').innerHTML=a;
+}
+
+// ================= V3.0 =================
+function calcV30(){
+  const t=($('b_ticker').value||'종목').toUpperCase().trim();
+  const seed=parseFloat($('b_seed').value)||0, avg=parseFloat($('b_avg').value)||0,
+        qty=parseFloat($('b_qty').value)||0, cur=parseFloat($('b_cur').value)||0,
+        divN=parseFloat($('b_div').value)||20, tpP=parseFloat($('b_tp').value)||15,
+        ov=parseFloat($('b_one').value)||0;
+  if(seed<=0){alert('원금(시드)을 입력하세요.');return;}
+  const one=ov>0?ov:seed/divN, inv=avg*qty, T=calcT(inv,one), prog=Math.min(inv/seed*100,100);
+  const pct=15-1.5*T, first=T<10, quarter=T>19&&T<20, sign=pct>=0?'+':'';
+  const pl=`평단 ${sign}${pct.toFixed(1)}%`;
+  save(); $('b_res').style.display='block';
+  $('b_t').textContent='T '+T.toFixed(1); $('b_prog').textContent=prog.toFixed(1)+'%';
+  $('b_one_o').textContent=money(one); $('b_bar').style.width=prog+'%';
+  const ph=$('b_phase'); ph.className='phase';
+  if(quarter){ph.className='phase q'; ph.textContent='쿼터모드 (19<T<20) · 매수 중단';}
+  else ph.textContent = qty<=0?'시작 전 · 1회차 진입' : first?'전반전 (T<10) · 공격적 매수':'후반전 (T≥10) · 보수적 매수';
+
+  const buy=$('b_buy'), bn=$('b_buyNote');
+  if(quarter){ buy.innerHTML='<div class="signal hold">쿼터모드에서는 매수하지 않습니다.</div>'; bn.textContent='T가 19 초과 20 미만이면 매수 중단, 매도만 집행합니다.'; }
+  else if(qty<=0){
+    if(cur>0){const s=Math.max(1,Math.round(one/cur));
+      buy.innerHTML=orderHTML('buyv30','1회차 진입 매수','시장가/LOC',[['종목',t],['금액',money(one)],['기준가',px(cur)],['예상 수량',s+'주']]);}
+    else buy.innerHTML=orderHTML('buyv30','1회차 진입 매수','시장가/LOC',[['종목',t],['금액',money(one)],['수량','현재가 입력 시 계산']]);
+    bn.textContent='첫 진입은 1회 매수액만큼 현재가 근처에서 매수 후, 내일부터 공식 적용.';
+  } else if(first){
+    const half=one/2, pa=avg, pb=avg*(1+pct/100);
+    buy.innerHTML=orderHTML('buyv30','① 평단가 LOC 매수','LOC',[['주문가',px(pa)+'  (평단가)'],['금액',money(half)],['수량',Math.max(1,Math.round(half/pa))+'주']])
+      +orderHTML('buyv30','② 큰수 LOC 매수','LOC',[['주문가',px(pb)+`  (${pl})`],['금액',money(half)],['수량',Math.max(1,Math.round(half/pb))+'주']]);
+    bn.textContent='전반전: 1회 매수액을 반으로 나눠 ①평단가 + ②'+pl+' 두 주문.';
+  } else {
+    const pb=avg*(1+pct/100);
+    buy.innerHTML=orderHTML('buyv30','평단 대비 LOC 매수 (단일)','LOC',[['주문가',px(pb)+`  (${pl})`],['금액',money(one)],['수량',Math.max(1,Math.round(one/pb))+'주']]);
+    bn.textContent='후반전: 1회 매수액 전체를 '+pl+' 하나로.';
+  }
+
+  const sell=$('b_sell'), sn=$('b_sellNote');
+  if(qty<=0){ sell.innerHTML='<div class="signal hold">보유 수량이 없어 매도 주문이 없습니다.</div>'; sn.textContent=''; }
+  else{
+    const q4=Math.round(qty/4), q34=qty-q4, lp=avg*(1+pct/100), tp=avg*(1+tpP/100);
+    if(quarter){
+      sell.innerHTML=orderHTML('sell','① 쿼터 MOC 매도 (1/4)','MOC',[['방식','종가(MOC) 시장가 매도'],['수량',q4+'주']])
+        +orderHTML('sell','② 지정가 매도 (3/4)','지정가',[['주문가',px(tp)+`  (평단 +${tpP.toFixed(0)}%)`],['수량',q34+'주']]);
+      sn.textContent='쿼터모드: 1/4 MOC 종가 매도 + 3/4 익절 지정가. 체결 후 T값 재계산해 사이클 지속.';
+    } else {
+      sell.innerHTML=orderHTML('sell','① 쿼터 LOC 매도 (1/4)','LOC',[['주문가',px(lp)+`  (${pl})`],['수량',q4+'주']])
+        +orderHTML('sell','② 지정가 매도 (3/4)','지정가',[['주문가',px(tp)+`  (평단 +${tpP.toFixed(0)}%)`],['수량',q34+'주']]);
+      sn.textContent=`T ≤ 19: 매일 1/4 ${pl} LOC 매도 + 3/4 평단 +${tpP.toFixed(0)}% 지정가.`;
+    }
+  }
+
+  const sig=$('b_signal');
+  if(qty<=0) sig.innerHTML='<div class="signal hold">보유 전 · 익절 판단 대상 아님</div>';
+  else{ const tp=avg*(1+tpP/100), r=cur>0?(cur/avg-1)*100:null;
+    if(cur>0&&cur>=tp) sig.innerHTML=`<div class="signal hit">✅ 익절 기준 도달 — 사이클 종료 권장<br><small>현재가 ${px(cur)} ≥ ${px(tp)} (수익률 +${r.toFixed(2)}%) · 수익금 복리 반영 후 1회차 재시작</small></div>`;
+    else if(cur>0){const g=(tp-cur)/cur*100; sig.innerHTML=`<div class="signal hold">⏳ 익절 대기<br><small>현재 ${r>=0?'+':''}${r.toFixed(2)}% · 목표 ${px(tp)}까지 ${g.toFixed(2)}% · 원칙대로 매수 지속</small></div>`;}
+    else sig.innerHTML=`<div class="signal hold">현재가 입력 시 익절 판단<br><small>익절 목표가 ${px(tp)} (평단 +${tpP.toFixed(0)}%)</small></div>`;
+  }
+
+  let a='';
+  if(quarter) a=`<div class="warn"><b>🔻 쿼터모드 (T ${T.toFixed(1)})</b><br>원금 거의 소진. 매수 중단하고 1/4 MOC + 3/4 지정가 매도로 물량을 덜어냅니다. 체결되면 회차가 낮아지며 사이클 지속. 급등으로 전일 기준가를 넘으면 쿼터모드 없이 T 재계산.</div>`;
+  else if(T>=20) a=`<div class="warn danger"><b>⚠️ 원금 소진 (T ${T.toFixed(1)})</b><br>20회차 도달. V3.0은 1회 매수액을 줄이지 않고 유지하며 보유 물량 매도로만 대응. 임의 몰빵은 원칙 위반.</div>`;
+  else if(T>=15) a=`<div class="warn"><b>주의 — 후반 회차 (T ${T.toFixed(1)})</b><br>원금의 ${prog.toFixed(0)}% 투입. 20분할이라 소진이 빠릅니다. 1회 매수액만 집행하세요.</div>`;
+  $('b_alert').innerHTML=a;
+}
+
+document.addEventListener('keydown',e=>{ if(e.key!=='Enter')return;
+  if($('tab-v22').classList.contains('active')) calcV22();
+  else if($('tab-v30').classList.contains('active')) calcV30();
+});
+load();
+</script>
+</body>
+</html>
