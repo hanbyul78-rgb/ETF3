@@ -140,9 +140,35 @@
   .disc{font-size:11px; color:#5b6572; text-align:center; margin-top:18px; line-height:1.6}
   .muted-s{font-size:11px;color:var(--muted)}
   @media(max-width:480px){ .grid{grid-template-columns:1fr} .stat .v{font-size:15px} .navcards{grid-template-columns:1fr} .hrs{grid-template-columns:1fr} .cmp.c3{grid-template-columns:80px 1fr 1fr; font-size:11.5px} .mainbar button{font-size:11.5px} .tbtns{grid-template-columns:1fr} }
+
+  /* lock screen */
+  #lock{position:fixed; inset:0; z-index:999; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px}
+  #lock .box{width:100%; max-width:340px; text-align:center}
+  #lock .ic{font-size:40px; margin-bottom:10px}
+  #lock h2{font-size:18px; margin:0 0 6px}
+  #lock p{font-size:12.5px; color:var(--muted); margin:0 0 18px}
+  #lock input{width:100%; padding:13px 14px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; color:var(--txt); font-size:16px; outline:none; text-align:center; letter-spacing:2px}
+  #lock input:focus{border-color:var(--im)}
+  #lock button{width:100%; padding:13px; margin-top:10px; border:none; border-radius:10px; background:var(--im); color:#fff; font-size:15px; font-weight:700; cursor:pointer}
+  #lock .err{color:#fca5a5; font-size:12.5px; margin-top:10px; min-height:18px}
+  #app{display:none}
 </style>
 </head>
 <body>
+
+<!-- 🔒 접속 잠금 -->
+<div id="lock">
+  <div class="box">
+    <div class="ic">🔒</div>
+    <h2>접속 비밀번호</h2>
+    <p>이 페이지는 비밀번호가 있는 사람만 볼 수 있습니다.</p>
+    <input id="pw" type="password" placeholder="비밀번호" autocomplete="off">
+    <button onclick="unlock()">입장</button>
+    <div class="err" id="pwErr"></div>
+  </div>
+</div>
+
+<div id="app">
 <div class="wrap">
   <header>
     <h1>📈 라오어 투자법 계산기</h1>
@@ -538,9 +564,51 @@
     3배 레버리지 ETF는 고위험 상품이며, 모든 투자의 최종 책임은 본인에게 있습니다.
   </p>
 </div>
+</div>
 
 <script>
+/* ============================================================
+   🔒 접속 비밀번호 설정
+   현재 비밀번호: laoer2026
+   ※ 바꾸려면 아래 PW_HASH 값을 새 비밀번호의 SHA-256 해시로 교체하세요.
+     (해시 생성이 필요하면 요청해 주세요)
+   ⚠️ 주의: 이것은 '가벼운 차단'일 뿐 진짜 보안이 아닙니다.
+      페이지 소스보기로 내용을 볼 수 있습니다. 확실히 막으려면
+      Cloudflare Pages + Access 같은 서버단 인증을 쓰세요.
+   ============================================================ */
+const PW_HASH = "7a1392f3f98259d0fc1ff2dae2336030b57f4d2b015b02bedf757044246057db";
+
 const $ = id => document.getElementById(id);
+
+async function sha256(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function unlock(){
+  const v = $('pw').value;
+  if(!v){ $('pwErr').textContent='비밀번호를 입력하세요.'; return; }
+  let h;
+  try { h = await sha256(v); }
+  catch(e){ h = null; }                      // file:// 등에서 crypto 미지원 시
+  if(h === PW_HASH || (h === null && v === 'laoer2026')){
+    try{ localStorage.setItem('lao_unlocked','1'); }catch(e){}
+    openApp();
+  } else {
+    $('pwErr').textContent='비밀번호가 올바르지 않습니다.';
+    $('pw').value=''; $('pw').focus();
+  }
+}
+function openApp(){
+  $('lock').style.display='none';
+  $('app').style.display='block';
+  if(!window.__booted){ window.__booted=true; load(); }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  let ok=false; try{ ok = localStorage.getItem('lao_unlocked')==='1'; }catch(e){}
+  if(ok) openApp(); else $('pw').focus();
+  $('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') unlock(); });
+});
+
 const money = n => '$' + n.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
 const money0 = n => Math.round(n).toLocaleString('en-US');
 const px = n => '$' + n.toFixed(2);
@@ -852,7 +920,6 @@ document.addEventListener('keydown',e=>{ if(e.key!=='Enter')return;
   else if($('p-im-rev').classList.contains('active')) calcRev();
   else if($('p-vr-calc').classList.contains('active')) calcVR();
 });
-load();
 </script>
 </body>
 </html>
