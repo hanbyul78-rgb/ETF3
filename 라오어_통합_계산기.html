@@ -18,14 +18,16 @@
   header{text-align:center; margin:6px 0 12px}
   header h1{font-size:19px; margin:0 0 3px}
   header p{margin:0; color:var(--muted); font-size:12px}
+  .appver{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--panel2); border:1px solid var(--line); color:#93c5fd; margin-left:4px}
 
   .navwrap{position:sticky; top:0; z-index:10; background:var(--bg); padding:8px 0}
-  .mainbar{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
-  .mainbar button{padding:11px 3px; border:1px solid var(--line); border-radius:11px; background:var(--panel);
-    color:var(--muted); font-size:12.5px; font-weight:700; cursor:pointer}
+  .mainbar{display:grid; grid-template-columns:repeat(5,1fr); gap:5px}
+  .mainbar button{padding:11px 2px; border:1px solid var(--line); border-radius:11px; background:var(--panel);
+    color:var(--muted); font-size:12px; font-weight:700; cursor:pointer}
   .mainbar button.active[data-main="home"]{background:#475569; color:#fff; border-color:transparent}
   .mainbar button.active[data-main="im"]{background:var(--im); color:#fff; border-color:transparent}
   .mainbar button.active[data-main="vr"]{background:var(--vr); color:#042f2e; border-color:transparent}
+  .mainbar button.active[data-main="memo"]{background:#a855f7; color:#fff; border-color:transparent}
   .mainbar button.active[data-main="gd"]{background:var(--gd); color:#fff; border-color:transparent}
   .subbar{display:none; grid-auto-flow:column; grid-auto-columns:1fr; gap:6px; margin-top:6px}
   .subbar button{padding:8px 3px; border:1px solid var(--line); border-radius:9px; background:var(--panel2);
@@ -151,7 +153,28 @@
   #lock input:focus{border-color:var(--im)}
   #lock button{width:100%; padding:13px; margin-top:10px; border:none; border-radius:10px; background:var(--im); color:#fff; font-size:15px; font-weight:700; cursor:pointer}
   #lock .err{color:#fca5a5; font-size:12.5px; margin-top:10px; min-height:18px}
+  #lock .privacy{margin-top:18px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 15px; text-align:left}
+  #lock .privacy .pt{font-size:12.5px; font-weight:700; color:#4ade80; margin-bottom:8px}
+  #lock .privacy p{font-size:11.5px; color:#cbd5e1; line-height:1.75; margin:0}
+  #lock .privacy b{color:#e6edf3}
+  #lock .privacy .dim{color:var(--muted)}
   #app{display:none}
+  /* memo */
+  .memoIn{width:100%; padding:11px 12px; background:var(--panel2); border:1px solid var(--line); border-radius:9px; color:var(--txt); font-size:14px; outline:none; resize:vertical; min-height:88px; font-family:inherit; line-height:1.6}
+  .memoIn:focus{border-color:#a855f7}
+  .memo{background:var(--panel2); border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:10px}
+  .memo .mh{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px}
+  .memo .md{font-size:11px; color:var(--muted)}
+  .memo .del{background:none; border:none; color:#6b7280; font-size:15px; cursor:pointer; padding:0 2px}
+  .memo .del:hover{color:#ef4444}
+  .memo .mb{font-size:13.5px; color:#e6edf3; line-height:1.65; white-space:pre-wrap; word-break:break-word}
+  .empty{text-align:center; color:var(--muted); font-size:13px; padding:24px 0}
+  .verlist .vrow{display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:12.5px}
+  .verlist .vrow:last-child{border:none}
+  .verlist .vtag{flex:0 0 46px; font-weight:700; color:#93c5fd; font-variant-numeric:tabular-nums}
+  .verlist .vtx{flex:1; color:#cbd5e1; line-height:1.6}
+  .verlist .vrow.now .vtag{color:#4ade80}
+  .verlist .vrow.now .vtx b{color:#4ade80}
 </style>
 </head>
 <body>
@@ -165,6 +188,16 @@
     <input id="pw" type="password" placeholder="비밀번호" autocomplete="off">
     <button onclick="unlock()">입장</button>
     <div class="err" id="pwErr"></div>
+    <div class="privacy">
+      <div class="pt">🔐 입력하신 정보는 안전합니다</div>
+      <p>
+        평단·수량·잔금 등 <b>모든 입력값은 이 기기의 브라우저 안에만</b> 저장됩니다.
+        서버로 전송되지 않고, 저장하는 서버도 없습니다. 만든 사람도, 다른 접속자도 볼 수 없습니다.<br><br>
+        여러 명이 접속해도 <b>서로의 데이터가 섞이지 않습니다.</b> 각자 자기 기기에만 따로 기록됩니다.<br><br>
+        <span class="dim">단, 기기별로 따로 저장되므로 폰에 입력한 값이 PC에는 나타나지 않습니다.
+        기기를 옮기거나 백업하려면 앱 안의 <b>메모 → 데이터 백업</b>에서 내보내기·불러오기를 쓰세요.</span>
+      </p>
+    </div>
   </div>
 </div>
 
@@ -172,15 +205,20 @@
 <div class="wrap">
   <header>
     <h1>📈 라오어 투자법 계산기</h1>
-    <p>무한매수법 V4.0 · 밸류 리밸런싱 — 예측하지 않고 시스템으로 대응한다.</p>
+    <p>무한매수법 V4.0 · 밸류 리밸런싱 — 예측하지 않고 시스템으로 대응한다. <span class="appver">앱 v2.2</span></p>
   </header>
 
   <div class="navwrap">
     <div class="mainbar">
       <button data-main="home" class="active" onclick="showMain('home')">🏠 소개</button>
-      <button data-main="im" onclick="showMain('im')">🔁 무한매수법</button>
+      <button data-main="im" onclick="showMain('im')">🔁 무한매수</button>
       <button data-main="vr" onclick="showMain('vr')">⚖️ VR</button>
       <button data-main="gd" onclick="showMain('gd')">📘 가이드</button>
+      <button data-main="memo" onclick="showMain('memo')">📝 메모</button>
+    </div>
+    <div class="subbar" data-main="memo">
+      <button data-sub="log" class="active" onclick="showSub('memo','log')">매매일지</button>
+      <button data-sub="backup" onclick="showSub('memo','backup')">데이터 백업</button>
     </div>
     <div class="subbar" data-main="im">
       <button data-sub="v4" class="active" onclick="showSub('im','v4')">V4.0 계산기</button>
@@ -242,6 +280,74 @@
       <div class="tip"><div class="i">🎯</div><div class="t"><b>종목은 TQQQ / SOXL.</b> V4.0 공식 가이드 기준, 초심자는 TQQQ만. 그 외 종목은 오피셜이 아닙니다.</div></div>
       <div class="tip"><div class="i">🚫</div><div class="t"><b>몰빵·물타기 금지.</b> 정해진 1회 매수액만 기계적으로. 임의 매수는 원칙 위반입니다.</div></div>
       <div class="tip"><div class="i">🔮</div><div class="t"><b>예측 금지.</b> "오를까요?"가 아니라, 시스템으로 대응합니다.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🗒️ 업데이트 내역</h2>
+      <div class="verlist">
+        <div class="vrow now"><div class="vtag">v2.2</div><div class="vtx"><b>현재 버전</b> — 개인 메모(매매일지) 탭, 데이터 내보내기·불러오기, 잠금화면 개인정보 안내 추가</div></div>
+        <div class="vrow"><div class="vtag">v2.1</div><div class="vtx">접속 비밀번호 잠금 화면 추가 (SHA-256 해시)</div></div>
+        <div class="vrow"><div class="vtag">v2.0</div><div class="vtx">무한매수법 <b>V4.0 전면 개편</b> — 회차 가산식 T, 잔금 기반 변동 1회매수금, 별지점, 리버스모드 계산기 신규. V2.2·V3.0 제거. 홈(소개) 페이지 신설</div></div>
+        <div class="vrow"><div class="vtag">v1.5</div><div class="vtx">VR 운용 방식 3종(거치식·적립식·인출식) 및 G(그라디언트) 반영</div></div>
+        <div class="vrow"><div class="vtag">v1.4</div><div class="vtx">무한매수법 + VR 전체 통합, 2단 탭 구조 도입</div></div>
+        <div class="vrow"><div class="vtag">v1.3</div><div class="vtx">밸류 리밸런싱(VR) 계산기 추가</div></div>
+        <div class="vrow"><div class="vtag">v1.2</div><div class="vtx">V2.2·V3.0 탭 통합, 기본 가이드(장 시간·매매 타이밍) 추가</div></div>
+        <div class="vrow"><div class="vtag">v1.1</div><div class="vtx">무한매수법 V3.0 계산기 추가</div></div>
+        <div class="vrow"><div class="vtag">v1.0</div><div class="vtx">무한매수법 V2.2 계산기 최초 제작</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 메모 · 매매일지 ==================== -->
+  <section id="p-memo-log" class="page">
+    <div class="card">
+      <h2 style="color:#c4b5fd">📝 매매일지 · 메모</h2>
+      <p class="note" style="margin-top:0">오늘 건 주문, 체결 결과, 흔들렸던 순간 — 무엇이든 기록하세요. <b>이 기기에만 저장</b>되며 아무에게도 전송되지 않습니다.</p>
+      <textarea id="memoIn" class="memoIn" placeholder="예) 7/11 TQQQ 40분할 T=8.5. 별지점 $52.10 LOC 8주 + 평단 LOC 8주 예약. 하락 무섭지만 규칙대로 집행."></textarea>
+      <button class="btn" style="background:#a855f7" onclick="addMemo()">메모 저장</button>
+    </div>
+    <div class="card">
+      <h2>📚 기록 <span class="muted-s" id="memoCount"></span></h2>
+      <div id="memoList"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 데이터 백업 ==================== -->
+  <section id="p-memo-backup" class="page">
+    <div class="card">
+      <h2 style="color:#c4b5fd">💾 데이터 백업 — 왜 필요한가요?</h2>
+      <p class="prose">
+        입력하신 모든 값은 <b>이 기기의 브라우저 안에만</b> 저장됩니다. 안전하지만, 그 대신 두 가지 불편이 있습니다.
+      </p>
+      <div class="kv" style="margin-top:8px"><div class="k">기기 분리</div><div>폰에 입력한 값이 <b>PC에는 나타나지 않습니다.</b> 브라우저가 달라도 마찬가지입니다.</div></div>
+      <div class="kv"><div class="k">삭제 위험</div><div>브라우저 기록·캐시를 지우면 <b>입력값이 함께 사라집니다.</b></div></div>
+      <p class="prose" style="margin-top:12px">
+        그래서 <b>내보내기</b>로 기록을 파일 하나에 담아두고, 다른 기기나 복구 시 <b>불러오기</b>로 되살리면 됩니다. 서버를 쓰지 않고도 기기 간 이동과 백업이 가능합니다.
+      </p>
+    </div>
+    <div class="card">
+      <h2>📤 내보내기</h2>
+      <p class="note" style="margin-top:0">계산기 입력값 + 메모를 <b>파일 하나로</b> 저장합니다. 이 파일을 메일·메신저로 옮기거나 안전한 곳에 보관하세요.</p>
+      <button class="btn" style="background:#a855f7" onclick="exportData()">백업 파일 내려받기</button>
+      <div id="expOut" class="note"></div>
+    </div>
+    <div class="card">
+      <h2>📥 불러오기</h2>
+      <p class="note" style="margin-top:0">내보낸 백업 파일을 선택하면 그 시점의 상태로 <b>완전히 복원</b>됩니다. ⚠️ 현재 기기의 기존 데이터는 덮어써집니다.</p>
+      <input type="file" id="impFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
+      <button class="btn ghost" onclick="document.getElementById('impFile').click()">백업 파일 선택</button>
+      <div id="impOut" class="note"></div>
+    </div>
+    <div class="card">
+      <h2>🔁 기기 옮기는 법 (3단계)</h2>
+      <div class="step"><div class="n">1</div><div class="tx">기존 기기(예: 폰)에서 <b>내보내기</b> → 백업 파일이 저장됩니다.</div></div>
+      <div class="step"><div class="n">2</div><div class="tx">그 파일을 새 기기(예: PC)로 옮깁니다. 메일로 보내거나 카톡 나에게 보내기면 충분합니다.</div></div>
+      <div class="step"><div class="n">3</div><div class="tx">새 기기에서 이 페이지를 열고 <b>불러오기</b> → 파일 선택. 끝입니다.</div></div>
+    </div>
+    <div class="card">
+      <h2>🗑️ 전체 초기화</h2>
+      <p class="note" style="margin-top:0">이 기기에 저장된 <b>모든 입력값과 메모를 삭제</b>합니다. 되돌릴 수 없으니 먼저 내보내기를 권합니다.</p>
+      <button class="btn ghost" style="color:#fca5a5; border-color:rgba(239,68,68,.4)" onclick="wipeAll()">전체 데이터 삭제</button>
     </div>
   </section>
 
@@ -619,8 +725,9 @@ function orderHTML(kind,title,tag,rows){
 }
 
 // ---------- navigation ----------
+const APP_VER='2.2';
 let MAIN='home';
-const activeSub={ home:'home', im:'v4', vr:'calc', gd:'guide' };
+const activeSub={ home:'home', im:'v4', vr:'calc', memo:'log', gd:'guide' };
 function showMain(m){
   MAIN=m;
   document.querySelectorAll('.mainbar button').forEach(b=>b.classList.toggle('active', b.dataset.main===m));
@@ -653,7 +760,70 @@ function load(){
       const gv=$('r_G').value, fv=$('r_flow').value; setMode(o._cfg.VMODE||'lump'); $('r_G').value=gv; $('r_flow').value=fv; }
   }catch(e){}
   try{const n=JSON.parse(localStorage.getItem('lao_nav')||'null'); if(n){Object.assign(activeSub,n.s); MAIN=n.m||'home';}}catch(e){}
+  renderMemos();
   showMain(MAIN);
+}
+
+// ================= 메모 (매매일지) =================
+function getMemos(){ try{ return JSON.parse(localStorage.getItem('lao_memos')||'[]'); }catch(e){ return []; } }
+function setMemos(a){ try{ localStorage.setItem('lao_memos', JSON.stringify(a)); }catch(e){} }
+function addMemo(){
+  const t=$('memoIn').value.trim();
+  if(!t){ $('memoIn').focus(); return; }
+  const a=getMemos();
+  const d=new Date();
+  const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  a.unshift({id:Date.now(), date:stamp, text:t});
+  setMemos(a); $('memoIn').value=''; renderMemos();
+}
+function delMemo(id){
+  if(!confirm('이 메모를 삭제할까요?')) return;
+  setMemos(getMemos().filter(m=>m.id!==id)); renderMemos();
+}
+function esc(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function renderMemos(){
+  const a=getMemos(), el=$('memoList'), c=$('memoCount');
+  if(!el) return;
+  c.textContent = a.length ? `(${a.length}개)` : '';
+  if(!a.length){ el.innerHTML='<div class="empty">아직 기록이 없습니다.<br>위에 첫 메모를 남겨보세요.</div>'; return; }
+  el.innerHTML = a.map(m=>`<div class="memo">
+      <div class="mh"><span class="md">${m.date}</span><button class="del" onclick="delMemo(${m.id})" title="삭제">✕</button></div>
+      <div class="mb">${esc(m.text)}</div>
+    </div>`).join('');
+}
+
+// ================= 데이터 백업 =================
+function exportData(){
+  const payload = { app:'라오어 투자법 계산기', version:APP_VER, exportedAt:new Date().toISOString(), data:{} };
+  ['lao_all','lao_nav','lao_memos'].forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) payload.data[k]=v; });
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const d=new Date(), name=`라오어계산기_백업_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+  $('expOut').innerHTML=`✅ <b>${name}</b> 파일을 내려받았습니다. 메모 ${getMemos().length}개 포함.`;
+}
+function importData(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const p=JSON.parse(rd.result);
+      if(!p.data) throw new Error('형식 오류');
+      if(!confirm('현재 기기의 데이터를 덮어씁니다. 계속할까요?')) return;
+      Object.entries(p.data).forEach(([k,v])=>localStorage.setItem(k,v));
+      $('impOut').innerHTML=`✅ 복원 완료 (백업 시점: ${(p.exportedAt||'').slice(0,10)}). 잠시 후 새로고침됩니다.`;
+      setTimeout(()=>location.reload(), 900);
+    }catch(e){
+      $('impOut').innerHTML=`❌ 불러오기 실패 — 올바른 백업 파일이 아닙니다.`;
+    }
+  };
+  rd.readAsText(f);
+  ev.target.value='';
+}
+function wipeAll(){
+  if(!confirm('이 기기의 모든 입력값과 메모를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+  ['lao_all','lao_nav','lao_memos'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
 }
 
 // ================= 무한매수법 V4.0 =================
