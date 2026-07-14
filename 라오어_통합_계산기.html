@@ -205,7 +205,7 @@
 <div class="wrap">
   <header>
     <h1>📈 라오어 투자법 계산기</h1>
-    <p>무한매수법 V4.0 · 밸류 리밸런싱 — 예측하지 않고 시스템으로 대응한다. <span class="appver">앱 v2.2</span></p>
+    <p>무한매수법 V4.0 · 밸류 리밸런싱 — 예측하지 않고 시스템으로 대응한다. <span class="appver">앱 v2.3</span></p>
   </header>
 
   <div class="navwrap">
@@ -222,6 +222,7 @@
     </div>
     <div class="subbar" data-main="im">
       <button data-sub="v4" class="active" onclick="showSub('im','v4')">V4.0 계산기</button>
+      <button data-sub="log" onclick="showSub('im','log')">회차 기록</button>
       <button data-sub="rev" onclick="showSub('im','rev')">리버스모드</button>
       <button data-sub="rule" onclick="showSub('im','rule')">V4.0 규칙</button>
     </div>
@@ -285,7 +286,8 @@
     <div class="card">
       <h2>🗒️ 업데이트 내역</h2>
       <div class="verlist">
-        <div class="vrow now"><div class="vtag">v2.2</div><div class="vtx"><b>현재 버전</b> — 개인 메모(매매일지) 탭, 데이터 내보내기·불러오기, 잠금화면 개인정보 안내 추가</div></div>
+        <div class="vrow now"><div class="vtag">v2.3</div><div class="vtx"><b>현재 버전</b> — <b>회차 기록</b> 신설. 체결 결과만 넣으면 평단·보유·잔금·T값이 자동 계산되고 계산기에 반영. 회차별 이력·실현손익 조회</div></div>
+        <div class="vrow"><div class="vtag">v2.2</div><div class="vtx">개인 메모(매매일지) 탭, 데이터 내보내기·불러오기, 잠금화면 개인정보 안내 추가</div></div>
         <div class="vrow"><div class="vtag">v2.1</div><div class="vtx">접속 비밀번호 잠금 화면 추가 (SHA-256 해시)</div></div>
         <div class="vrow"><div class="vtag">v2.0</div><div class="vtx">무한매수법 <b>V4.0 전면 개편</b> — 회차 가산식 T, 잔금 기반 변동 1회매수금, 별지점, 리버스모드 계산기 신규. V2.2·V3.0 제거. 홈(소개) 페이지 신설</div></div>
         <div class="vrow"><div class="vtag">v1.5</div><div class="vtx">VR 운용 방식 3종(거치식·적립식·인출식) 및 G(그라디언트) 반영</div></div>
@@ -406,6 +408,68 @@
         </div>
         <div id="v4_tOut" class="note"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- ==================== 회차 기록 ==================== -->
+  <section id="p-im-log" class="page">
+    <div class="card">
+      <h2 style="color:#93c5fd">📒 회차 기록 — 자동 계산</h2>
+      <p class="note" style="margin-top:0">체결 결과만 넣으면 <b>평단 · 보유수량 · 잔금 · T값이 전부 자동</b>으로 계산되고, 계산기에도 바로 반영됩니다. 더 이상 손으로 계산하지 않으셔도 됩니다.</p>
+      <div class="grid">
+        <div class="field"><label>원금 (시드) <span class="unit">$</span></label><input id="lg_seed" type="number" inputmode="decimal" placeholder="예: 6000" oninput="renderLog()"></div>
+        <div class="field"><label>분할 수 <span class="unit">계산기와 동일</span></label><input id="lg_div" type="number" inputmode="decimal" value="20" oninput="renderLog()"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 현재 상태 <span class="muted-s">(기록에서 자동 산출)</span></h2>
+      <div class="stats">
+        <div class="stat"><div class="k">평단</div><div class="v" id="lg_avg">–</div></div>
+        <div class="stat"><div class="k">보유 수량</div><div class="v" id="lg_qty">–</div></div>
+        <div class="stat"><div class="k">회차 (T)</div><div class="v" id="lg_T">–</div></div>
+      </div>
+      <div class="stats" style="margin-top:10px">
+        <div class="stat"><div class="k">잔금</div><div class="v" id="lg_cash">–</div></div>
+        <div class="stat"><div class="k">투입액</div><div class="v" id="lg_in">–</div></div>
+        <div class="stat"><div class="k">실현손익</div><div class="v" id="lg_pl">–</div></div>
+      </div>
+      <button class="btn im" onclick="syncToCalc()">이 값으로 계산기 채우기 →</button>
+      <div id="lg_sync" class="note"></div>
+    </div>
+
+    <div class="card">
+      <h2>➕ 오늘 체결 기록 추가</h2>
+      <p class="note" style="margin-top:0">체결된 것만 입력하세요. 체결 안 된 항목은 <b>0으로 두거나 비워두면</b> 됩니다.</p>
+      <div class="grid">
+        <div class="field"><label>날짜</label><input id="lg_date" type="date"></div>
+        <div class="field"><label>T 변화 <span class="unit">아래에서 선택</span></label><input id="lg_tev" type="text" value="full" readonly style="color:#93c5fd"></div>
+      </div>
+      <h3>🟦 매수 체결</h3>
+      <div class="grid">
+        <div class="field"><label>매수 수량 <span class="unit">주</span></label><input id="lg_bq" type="number" inputmode="decimal" placeholder="0"></div>
+        <div class="field"><label>매수 체결가 <span class="unit">$</span></label><input id="lg_bp" type="number" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <h3>🟧 매도 체결</h3>
+      <div class="grid">
+        <div class="field"><label>매도 수량 <span class="unit">주</span></label><input id="lg_sq" type="number" inputmode="decimal" placeholder="0"></div>
+        <div class="field"><label>매도 체결가 <span class="unit">$</span></label><input id="lg_sp" type="number" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <h3>🔢 T값 변화 (V4.0 규칙)</h3>
+      <div class="tbtns" id="lg_tbtns">
+        <button onclick="pickT('full')">1회 전량 매수 → T + 1</button>
+        <button onclick="pickT('half')">절반만 매수 → T + 0.5</button>
+        <button onclick="pickT('quarter')">쿼터매도 발생 → T × 0.75</button>
+        <button onclick="pickT('sellbuy1')">지정가매도 + 전량 LOC매수 → T×0.25 + 1</button>
+        <button onclick="pickT('sellbuy05')">지정가매도 + 절반 LOC매수 → T×0.25 + 0.5</button>
+        <button onclick="pickT('none')">미체결 → T 유지</button>
+      </div>
+      <button class="btn im" style="margin-top:12px" onclick="addLog()">기록 추가</button>
+    </div>
+
+    <div class="card">
+      <h2>📚 회차별 이력 <span class="muted-s" id="lg_count"></span></h2>
+      <div id="lg_list"></div>
     </div>
   </section>
 
@@ -725,9 +789,10 @@ function orderHTML(kind,title,tag,rows){
 }
 
 // ---------- navigation ----------
-const APP_VER='2.2';
+const APP_VER='2.3';
 let MAIN='home';
 const activeSub={ home:'home', im:'v4', vr:'calc', memo:'log', gd:'guide' };
+const KEYS=['lao_all','lao_nav','lao_memos','lao_v4log','lao_logcfg'];
 function showMain(m){
   MAIN=m;
   document.querySelectorAll('.mainbar button').forEach(b=>b.classList.toggle('active', b.dataset.main===m));
@@ -760,8 +825,105 @@ function load(){
       const gv=$('r_G').value, fv=$('r_flow').value; setMode(o._cfg.VMODE||'lump'); $('r_G').value=gv; $('r_flow').value=fv; }
   }catch(e){}
   try{const n=JSON.parse(localStorage.getItem('lao_nav')||'null'); if(n){Object.assign(activeSub,n.s); MAIN=n.m||'home';}}catch(e){}
-  renderMemos();
+  try{const c=JSON.parse(localStorage.getItem('lao_logcfg')||'null'); if(c){ $('lg_seed').value=c.seed||''; $('lg_div').value=c.div||20; }}catch(e){}
+  if(!$('lg_date').value) $('lg_date').value = new Date().toISOString().slice(0,10);
+  pickT('full');
+  renderMemos(); renderLog();
   showMain(MAIN);
+}
+function saveLogCfg(){ try{ localStorage.setItem('lao_logcfg', JSON.stringify({seed:$('lg_seed').value, div:$('lg_div').value})); }catch(e){} }
+
+// ================= 회차 기록 (자동 계산 엔진) =================
+const T_LABEL={full:'1회 전량 매수 (T+1)', half:'절반 매수 (T+0.5)', quarter:'쿼터매도 (T×0.75)',
+  sellbuy1:'지정가매도+전량매수 (T×0.25+1)', sellbuy05:'지정가매도+절반매수 (T×0.25+0.5)', none:'T 유지'};
+function applyT(T,ev){
+  if(ev==='full') return T+1;
+  if(ev==='half') return T+0.5;
+  if(ev==='quarter') return T*0.75;
+  if(ev==='sellbuy1') return T*0.25+1;
+  if(ev==='sellbuy05') return T*0.25+0.5;
+  return T;
+}
+function getLog(){ try{ return JSON.parse(localStorage.getItem('lao_v4log')||'[]'); }catch(e){ return []; } }
+function setLog(a){ try{ localStorage.setItem('lao_v4log', JSON.stringify(a)); }catch(e){} }
+function pickT(ev){
+  $('lg_tev').value=ev;
+  document.querySelectorAll('#lg_tbtns button').forEach(b=>b.style.background='');
+  [...document.querySelectorAll('#lg_tbtns button')].find(b=>b.getAttribute('onclick').includes(`'${ev}'`)).style.background='#39424f';
+}
+// 기록 전체를 처음부터 재생해 상태 산출
+function replay(){
+  const seed=parseFloat($('lg_seed').value)||0;
+  const recs=getLog();
+  let qty=0, basis=0, cash=seed, T=0, realized=0, bought=0;
+  recs.forEach(r=>{
+    if(r.bq>0 && r.bp>0){ const amt=r.bq*r.bp; basis+=amt; qty+=r.bq; cash-=amt; bought+=amt; }
+    if(r.sq>0 && r.sp>0){
+      const avgNow = qty>0 ? basis/qty : 0;
+      const sq = Math.min(r.sq, qty);
+      realized += (r.sp - avgNow)*sq;      // 실현손익
+      basis -= avgNow*sq;                   // 평단 유지
+      qty -= sq; cash += sq*r.sp;
+    }
+    T = applyT(T, r.tev);
+    r._avg = qty>0?basis/qty:0; r._qty=qty; r._cash=cash; r._T=T;
+  });
+  return {seed, recs, qty, avg: qty>0?basis/qty:0, cash, T, realized, bought};
+}
+function renderLog(){
+  if(!$('lg_seed')) return;
+  saveLogCfg();
+  const s=replay();
+  $('lg_avg').textContent = s.qty>0 ? '$'+s.avg.toFixed(2) : '–';
+  $('lg_qty').textContent = s.qty + '주';
+  $('lg_T').textContent = 'T ' + s.T.toFixed(2);
+  $('lg_cash').textContent = s.seed>0 ? '$'+money0(s.cash) : '–';
+  $('lg_in').textContent = s.qty>0 ? '$'+money0(s.avg*s.qty) : '$0';
+  const pl=$('lg_pl');
+  pl.textContent = (s.realized>=0?'+$':'-$') + money0(Math.abs(s.realized));
+  pl.style.color = s.realized>0 ? '#4ade80' : (s.realized<0 ? '#fca5a5' : '');
+  const el=$('lg_list'), c=$('lg_count');
+  c.textContent = s.recs.length ? `(${s.recs.length}건)` : '';
+  if(!s.recs.length){ el.innerHTML='<div class="empty">아직 기록이 없습니다.<br>위에서 첫 체결을 기록해 보세요.</div>'; return; }
+  el.innerHTML = [...s.recs].reverse().map(r=>{
+    let act='';
+    if(r.bq>0&&r.bp>0) act += `<span style="color:#93c5fd">매수 ${r.bq}주 @ $${(+r.bp).toFixed(2)}</span>`;
+    if(r.sq>0&&r.sp>0) act += (act?' · ':'') + `<span style="color:#fdba74">매도 ${r.sq}주 @ $${(+r.sp).toFixed(2)}</span>`;
+    if(!act) act='<span class="muted-s">미체결</span>';
+    return `<div class="memo">
+      <div class="mh"><span class="md">${r.date} · T ${r._T.toFixed(2)}</span><button class="del" onclick="delLog(${r.id})" title="삭제">✕</button></div>
+      <div class="mb" style="font-size:13px">${act}
+        <div class="muted-s" style="margin-top:6px">→ 평단 $${r._avg.toFixed(2)} · 보유 ${r._qty}주 · 잔금 $${money0(r._cash)} · ${T_LABEL[r.tev]}</div>
+      </div></div>`;
+  }).join('');
+}
+function addLog(){
+  const seed=parseFloat($('lg_seed').value)||0;
+  if(seed<=0){ alert('먼저 원금(시드)을 입력하세요.'); return; }
+  const bq=parseFloat($('lg_bq').value)||0, bp=parseFloat($('lg_bp').value)||0;
+  const sq=parseFloat($('lg_sq').value)||0, sp=parseFloat($('lg_sp').value)||0;
+  if(bq<=0 && sq<=0 && $('lg_tev').value!=='none'){ alert('매수 또는 매도 체결 내용을 입력하세요. (미체결이면 T 변화에서 "미체결"을 고르세요)'); return; }
+  const d=$('lg_date').value || new Date().toISOString().slice(0,10);
+  const a=getLog();
+  a.push({id:Date.now(), date:d, bq, bp, sq, sp, tev:$('lg_tev').value});
+  setLog(a);
+  ['lg_bq','lg_bp','lg_sq','lg_sp'].forEach(f=>$(f).value='');
+  renderLog(); syncToCalc(true);
+}
+function delLog(id){
+  if(!confirm('이 기록을 삭제할까요? 이후 평단·잔금·T가 다시 계산됩니다.')) return;
+  setLog(getLog().filter(r=>r.id!==id)); renderLog(); syncToCalc(true);
+}
+function syncToCalc(silent){
+  const s=replay();
+  if(s.seed<=0){ if(!silent) $('lg_sync').textContent='원금을 먼저 입력하세요.'; return; }
+  $('v4_avg').value = s.qty>0 ? s.avg.toFixed(2) : '';
+  $('v4_qty').value = s.qty || '';
+  $('v4_cash').value = s.cash.toFixed(2);
+  $('v4_T').value = +s.T.toFixed(6);
+  const d=parseFloat($('lg_div').value)||20; if([20,30,40].includes(d)) setDiv(d);
+  save();
+  $('lg_sync').innerHTML = `✅ 계산기에 반영됨 — 평단 $${s.avg.toFixed(2)} · 보유 ${s.qty}주 · 잔금 $${money0(s.cash)} · T ${s.T.toFixed(2)}`;
 }
 
 // ================= 메모 (매매일지) =================
@@ -795,12 +957,12 @@ function renderMemos(){
 // ================= 데이터 백업 =================
 function exportData(){
   const payload = { app:'라오어 투자법 계산기', version:APP_VER, exportedAt:new Date().toISOString(), data:{} };
-  ['lao_all','lao_nav','lao_memos'].forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) payload.data[k]=v; });
+  KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) payload.data[k]=v; });
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const d=new Date(), name=`라오어계산기_백업_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
-  $('expOut').innerHTML=`✅ <b>${name}</b> 파일을 내려받았습니다. 메모 ${getMemos().length}개 포함.`;
+  $('expOut').innerHTML=`✅ <b>${name}</b> 내려받기 완료. 회차 기록 ${getLog().length}건 · 메모 ${getMemos().length}개 포함.`;
 }
 function importData(ev){
   const f=ev.target.files[0]; if(!f) return;
@@ -821,8 +983,8 @@ function importData(ev){
   ev.target.value='';
 }
 function wipeAll(){
-  if(!confirm('이 기기의 모든 입력값과 메모를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
-  ['lao_all','lao_nav','lao_memos'].forEach(k=>localStorage.removeItem(k));
+  if(!confirm('이 기기의 모든 입력값·회차 기록·메모를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+  KEYS.forEach(k=>localStorage.removeItem(k));
   location.reload();
 }
 
